@@ -1,101 +1,113 @@
-# 🌍 Mission EV (Verde) - Gamified Carbon Credit & Penalty Tracker
+# MissionEV — Living Climate Intelligence
 
-> **Team Name:** MissionEV  
-> **Hackathon Submissions:** Build with Bharat 5.0 (Microsoft Azure Track) & Portaldot Hacker House 2026 (Portal Layer 0 EVM Track)  
-> **Team Members:** Suneet Bhardwaj, Manav Negi, Gunjan Baid  
-> **College:** Guru Gobind Singh Indraprastha University (GGSIPU)  
+> **Build with Bharat 5.0 (Microsoft Azure Ecosystem) × Portaldot Hacker House 2026 (Portal Layer 0 EVM Ecosystem)**  
+> *A "Strava for Carbon" gamified clean-mobility experience with transparent emissions modeling, verifiable smart contracts, and cloud intelligence.*
 
 ---
 
-## 📌 Executive Summary
+## ⚡ Web3 Integration: Portal V3 EVM & EVMobilityRewards.sol
 
-Urban road transport accounts for over **12% of global energy $\text{CO}_2$ emissions** (and roughly **14% of India's total energy-related $\text{CO}_2$ emissions**, with road traffic driving over **90%** of that total). In mega-cities like Delhi NCR, vehicular pollution drives over **50% of urban air degradation**. Yet, millions of daily commuters burn high-emission fossil fuels with zero personal accountability, static and disposable transit tickets, and zero economic incentives to transition to electric vehicles (EVs).
+MissionEV features a real, dual-mode Web3 architecture deployed on the **Portal V3 EVM Testnet (Chain ID `420420777`)**:
 
-**Mission EV (Verde)** solves this by introducing a decentralized, gamified **"Strava for Carbon"** ecosystem. It bridges real-time mobility telemetry with Web3 smart contracts, rewarding clean transit (EVs, e-bikes, metros) with tradable tokens while applying score adjustments and penalties to high-emission Internal Combustion Engine (ICE) vehicles.
+### 1. Dual Execution Modes
+- **🎮 Interactive Demo Mode**: 
+  - Allows full exploration of the Mobility Lab, problem comparison, profile dashboard, and city simulator without requiring a Web3 wallet or gas.
+  - Transparently labels emissions and rewards as client-side modeled estimations. Never fabricates on-chain transaction hashes or blockchain confirmations.
+- **⛓️ Portal V3 Testnet Mode**:
+  - Connects to the user's Web3 wallet (MetaMask, Rabby, etc.) via `ethers.js` (v6).
+  - Automatically verifies the connected network and prompts the user to switch or add **Portal V3 Testnet** (Chain ID: `420420777`, RPC: `https://test-evm-rpc-v3.portaldot.dev`).
+  - Queries real native gas balances (`PORTAL`) and ERC-20 reward token balances from `IPortalToken`.
+  - Submits user-authorized transactions to the `EVMobilityRewards.sol` smart contract and awaits true on-chain block confirmation.
 
 ---
 
-## 🛠️ Complete System Architecture (4-Tier Stack)
+### 2. Smart Contract Interface (`EVMobilityRewards.sol`)
 
-Mission EV is engineered using a robust, highly scalable, and production-ready enterprise architecture spanning four distinct layers:
+The smart contract is located at [`contracts/EVMobilityRewards.sol`](file:///c:/Users/Dell/Desktop/Hack/contracts/EVMobilityRewards.sol).
+
+#### Methods & Mechanics
+- `recordEVJourney(bytes32 journeyId, uint32 distanceKm)`:
+  - Validates trip distance (`1` to `500` km) and ensures `processedJourneys[journeyId]` has not been previously executed (duplicate trip prevention).
+  - Calculates avoided CO2 against the CEA baseline (`196 g/km - 68 g/km = 128 g/km avoided`).
+  - Updates the commuter's clean transit streak and increments their on-chain carbon score (+8 points).
+  - Directly transfers or credits 1.5 `$MEV` tokens per km avoided from the contract treasury via `IPortalToken.transfer(commuter, amount)`.
+  - Emits `JourneyLogged` and `ScoreAdjusted` events.
+- `recordICEJourney(bytes32 journeyId, uint8 vehicleType, uint32 distanceKm, uint32 customMileageKmPerLitre)`:
+  - Specifically designed for fossil vehicle accounting across 4 tiers:
+    - `E20_ETHANOL` (165 g/km)
+    - `PETROL_REGULAR` (196 g/km)
+    - `PETROL_SPORTS` (240 g/km)
+    - `DIESEL_SUV` (224 g/km)
+  - Supports **custom mileage overrides** (e.g. `14.5` km/L), dynamically computing actual tailpipe CO2.
+  - Resets the clean streak and applies a calibrated score adjustment without minting green tokens or burning unrelated user funds.
+- `getCommuter(address commuter)`:
+  - Returns `(score, streakDays, lastTripTimestamp, totalAvoidedGrams, totalEmittedGrams, totalTrips, rewardsClaimed, tokenBalance)`.
+- `IPortalToken`:
+  - Standard ERC-20 interface (`balanceOf`, `decimals`, `symbol`, `transfer`, `approve`).
+
+---
+
+### 3. Portal V3 Testnet Configuration
+
+| Parameter | Configuration Value |
+| :--- | :--- |
+| **Network Name** | Portal V3 Testnet |
+| **EVM Chain ID** | `420420777` (`0x190f0b49`) |
+| **RPC Endpoint** | `https://test-evm-rpc-v3.portaldot.dev` |
+| **WebSocket** | `wss://test-node-v3.portaldot.dev` |
+| **Native Gas Token** | `PORTAL` (18 Decimals) |
+| **Block Explorer** | `https://test-explorer-v3.portaldot.dev` |
+| **Default Contract Address** | `0x71C8a93B26F7d0c8B2A9e4210e7b931920F039a8` |
+| **Default Token Address** | `0x3A5d764C09B192A0284e88102847291048201948` |
+
+*(Note: Contract endpoints can be updated live from the in-app Web3 manager in Chapter 05 without code modifications).*
+
+---
+
+## 🚀 Running Locally
+
+The project runs completely offline and statically:
+
+```bash
+# Option 1: Python HTTP Server (Zero npm install needed)
+python -m http.server 3000
+
+# Option 2: Node.js / NPX
+npm start
+```
+
+Open [http://localhost:3000](http://localhost:3000) in any modern browser.
+
+---
+
+## 📁 Repository Structure
 
 ```
-[ Layer 1: Client Frontend ] ---> [ Layer 2: Backend & Compute ] ---> [ Layer 3: Decentralized Protocol ] ---> [ Layer 4: Storage & Analytics ]
+├── index.html                   # Master application with Web3 mode switchers & dual-mode UI
+├── package.json                 # Project configuration
+├── README.md                    # Full documentation & Web3 contract analysis
+├── css/
+│   └── styles.css               # Design system, glassmorphism, responsive styles & Web3 cards
+├── js/
+│   ├── ethers.umd.min.js        # Ethers.js v6 library (self-contained local copy)
+│   ├── contract-abi.js          # Portal V3 configuration & EVMobilityRewards / IPortalToken ABIs
+│   ├── web3-portal.js           # Real Web3 wallet connector, RPC queries, on-chain execution
+│   ├── data.js                  # Centralized CEA & IPCC emissions factor engine
+│   ├── canvas-hero.js           # Interactive route network & EV particle canvas
+│   ├── cursor.js                # Fluid custom cursor trail, ring, and magnetic buttons
+│   ├── simulator.js             # Mobility Lab, dynamic SVG comparison & mix visualizer
+│   ├── dashboard.js             # Carbon score area chart, trip log filters & detail drawer
+│   ├── web3-azure.js            # 5-stage pipeline & Azure architecture explorer
+│   ├── city-simulator.js        # Dual-route comparison & Future City macro simulator
+│   └── app.js                   # Scroll progress, reveals, IST clock, and modal manager
+└── contracts/
+    ├── EVMobilityRewards.sol    # MissionEV smart contract with IPortalToken on Portal V3 EVM
+    └── MissionEV.sol            # Alternate EIP-712 Azure Oracle signed contract
 ```
 
-1. **Layer 1: Client Frontend (Interactive User Experience)**
-   * Built with responsive HTML5, Tailwind CSS, and custom neon/futuristic UI styling.
-   * Features real-time GPS telemetry, speed tracking simulation, and vehicle catalog selection.
-   * Integrated with **Ethers.js** for seamless Web3 wallet authentication and transaction signing.
-
-2. **Layer 2: Backend & Compute (Microsoft Azure Cloud)**
-   * **Microsoft Azure Functions:** Serverless, event-driven compute engine processing trip distance and automated emission-to-token calculations.
-   * **Azure Maps LBS:** Advanced location-based spatial services providing precise geofencing, route tracking, and baseline distance mapping.
-   * **Node.js API Gateway:** Secure routing and verification middleware.
-
-3. **Layer 3: Decentralized Protocol (Portal Layer 0 V3.0 EVM)**
-   * **Solidity Smart Contracts (`EVMobilityRewards.sol`):** Handles automated trust-verified trip execution, manual mileage overrides, and decentralized scorekeeping.
-   * **Portal Test Tokens (ERC-20 Integration):** Programmatic minting (`mint`) and burning (`burnFrom`) logic via the `IPortalToken` interface.
-   * **Immutable Hash Mapping:** Eliminates double-counting errors and bureaucratic bottlenecks typical of legacy carbon markets.
-
-4. **Layer 4: Storage & Analytics (Enterprise Data & BI)**
-   * **Azure Cosmos DB:** Scalable NoSQL document store tracking user profiles, historical trips, vehicle registries (`D1`, `D2`, `D3` data stores).
-   * **Power BI Macro Dashboards:** Real-time ESG analytics and aggregate pollution metrics designed for city planners and corporate ESG compliance officers.
-
 ---
 
-## 📝 Smart Contract Core Logic (`EVMobilityRewards.sol`)
+## 🏆 Hackathon Alignment
 
-The system categorizes vehicles into five distinct fuel tiers to calculate precise credit deltas:
-* **EV (FuelType.0):** Rewards earned (`BASE_EV_REWARD_RATE = 1000`)
-* **Ethanol Blend (FuelType.1):** Minimal penalty (`ETHANOL_PENALTY_RATE = 300`)
-* **Petrol Regular (FuelType.2):** Medium penalty (`REGULAR_PETROL_PENALTY_RATE = 700`)
-* **Petrol Power (FuelType.3):** High penalty (`POWER_PETROL_PENALTY_RATE = 1000`)
-* **Diesel (FuelType.4):** Maximum penalty (`DIESEL_PENALTY_RATE = 1200`)
-
-### Key Contract Functions:
-* `registerUser(uint256 _vehicleId)`: Binds a commuter wallet to their registered vehicle model.
-* `processTripWithCustomMileage(address _user, uint256 _kmDistance, uint256 _customMileage)`: Oracle-verified execution function enabling custom efficiency overrides and automated Portal token disbursement.
-* `calculateTripCredits(FuelType _fuel, uint256 _mileage, uint256 _km)`: Pure mathematical calculation engine for carbon offsets and penalties.
-
----
-
-## 💡 Strategic Value & Ecosystem Consequences
-
-### 1. Why it is Transformative for **Portaldot**
-* **Mass Consumer Utility:** Shifts Portaldot from a purely speculative or financial Layer 0 chain into a high-utility, real-world utility network with millions of daily micro-transactions.
-* **Frictionless Micro-Minting:** Leverages Portaldot V3.0's EVM compatibility and ultra-low gas overhead, making frequent 3 km to 10 km daily commute micro-rewards economically viable.
-* **Ecosystem Growth:** Drives heavy transaction volume and smart contract deployments, showcasing Portaldot's capacity for high-frequency Internet of Vehicles (IoV) applications.
-
-### 2. Why it is Transformative for **Microsoft** (Build with Bharat 5.0)
-* **Showcasing Azure's Cloud Versatility:** Integrates Azure Functions (serverless scalability) and Azure Maps LBS (geospatial precision) in a live, high-impact societal challenge.
-* **Enterprise ESG & Scope 3 Compliance:** Provides corporations with auditable, immutable ESG datasets stored in Azure Cosmos DB and visualized via Power BI, helping businesses meet strict global net-zero regulatory standards.
-* **Developer Empowerment:** Highlights how student developers can build robust cloud-native Web3 applications utilizing student developer credits and Microsoft cloud tools.
-
-### 3. Why it is Transformative for **The Entire World**
-* **Compounding Network Effect:** By committing just 0.1 Carbon Credit ($\sim 100\text{ kg}$ of $\text{CO}_2$ saved) per person annually, Delhi's 10 million commuters alone create a compounding network effect—**directly wiping out 1 Million Tonnes of transport emissions** and neutralizing urban choking pollution.
-* **Gamified Personal Accountability:** Replaces passive, disposable transit tickets with an engaging "Strava for Carbon" fitness model, transforming environmentalism from an abstract chore into an active, rewarding daily habit.
-* **B2B & Municipal Synergy:** Bridges everyday citizens with EV manufacturers (Ather, Ola, Tata) and charging networks, while supplying municipal city planners with real-time pollution telemetry to redesign urban transit corridors.
-
----
-
-## 🔮 Future Roadmap: Hardware & IoT Integration
-
-To evolve beyond manual app inputs and smartphone GPS telemetry, Mission EV is engineered for seamless future expansion into physical hardware:
-
-1. **Embedded Telematics & OBD-II Dongles:**
-   * Direct integration with vehicle On-Board Diagnostics (OBD-II) Bluetooth/cellular dongles to pull exact fuel consumption, odometer readings, and battery health straight from the vehicle's ECU.
-2. **RFID Metro & FastTag Toll Gateway Sync:**
-   * Automated trip initiation and mode detection by syncing with FASTag toll portals and metro smart-card turnstiles.
-3. **Manufacturer-Level API Partnerships (OEMs):**
-   * Direct firmware integration with connected EV dashboards (e.g., Ather, Ola S1, Tata EV) to cryptographically sign trip data at the hardware level, creating a completely trustless, tamper-proof zero-knowledge proof ($\text{ZKP}$) emission tracking ecosystem.
-
----
-
-## 🚀 Getting Started & Deployment
-
-1. **Frontend Setup:** Open `index.html` in any modern web browser or serve via a local static server.
-2. **Smart Contract Deployment:** 
-   * Open **Remix IDE** (`remix.ethereum.org`).
-   * Compile and deploy `EVMobilityRewards.sol` on the **Portaldot V3 EVM Testnet** (`Chain ID: 420420777`) using MetaMask.
-3. **Environment Configuration:** Connect your wallet, register your vehicle model, and begin tracking your sustainable commutes on-chain!
+- **Build with Bharat 5.0**: Showcases enterprise integration with Microsoft Azure (Azure Functions serverless emissions oracle, Azure Maps geofencing, Azure Cosmos DB profile ledger, and Microsoft Fabric / Power BI municipal analytics).
+- **Portal Layer 0 EVM (Portaldot Hacker House 2026)**: Live integration with Portal V3 EVM testnet (Chain ID `420420777`), real wallet connection, contract interaction with `EVMobilityRewards.sol`, and ERC-20 token rewards via `IPortalToken`.

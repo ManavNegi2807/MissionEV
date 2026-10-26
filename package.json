@@ -1,0 +1,21 @@
+{
+  "name": "mission-ev",
+  "version": "1.0.0",
+  "description": "MissionEV — Living Climate Intelligence | Build with Bharat 5.0 (Azure) × Portal Hacker House 2026",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx -y serve -l 3000 .",
+    "dev": "npx -y serve -l 3000 ."
+  },
+  "keywords": [
+    "mission-ev",
+    "climate-tech",
+    "web3",
+    "portal-layer-0",
+    "microsoft-azure",
+    "evm",
+    "carbon-accounting"
+  ],
+  "author": "Build with Bharat 5.0 Team",
+  "license": "MIT"
+}
